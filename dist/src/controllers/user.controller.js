@@ -1,7 +1,7 @@
-import sendSecurityCode from '../utilities/sendSecurityCode.js';
+import sendSecurityCode from "../utilities/sendSecurityCode.js";
 import prisma from "../../lib/prisma.js";
 import bcrypt from "bcryptjs";
-import generateOTP from '../utilities/generateOTP.js';
+import generateOTP from "../utilities/generateOTP.js";
 // Get all users
 export const getAllUsers = async (req, res) => {
     try {
@@ -15,9 +15,13 @@ export const getAllUsers = async (req, res) => {
 // Get user by ID
 export const getUserById = async (req, res) => {
     try {
-        const user = await prisma.user.findUnique({ where: { id: req.params.userId } });
+        const user = await prisma.user.findUnique({
+            where: { id: req.params.userId },
+        });
         if (!user)
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
         res.status(200).json({ success: true, data: user });
     }
     catch (error) {
@@ -38,11 +42,17 @@ export const updateUserByEmail = async (req, res) => {
             where: { email: userEmail },
             data: {
                 ...(updatedPassword && { password: updatedPassword }),
-                ...input
-            }
+                ...input,
+            },
         });
         const { password: userPassword, ...rest } = user;
-        res.status(200).json({ success: true, message: "User updated successfully", data: rest });
+        res
+            .status(200)
+            .json({
+            success: true,
+            message: "User updated successfully",
+            data: rest,
+        });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -57,11 +67,17 @@ export const addDeliveryAddress = async (req, res) => {
             where: { email: userEmail },
             data: {
                 deliveryAddresses: {
-                    create: deliveryAddress
-                }
-            }
+                    create: deliveryAddress,
+                },
+            },
         });
-        res.status(200).json({ success: true, message: "Delivery address added successfully", data: user });
+        res
+            .status(200)
+            .json({
+            success: true,
+            message: "Delivery address added successfully",
+            data: user,
+        });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -70,7 +86,7 @@ export const addDeliveryAddress = async (req, res) => {
 // Update user address
 export const updateAddressById = async (req, res) => {
     try {
-        const addressId = parseInt(req.params.addressId);
+        const addressId = req.params.addressId;
         const { name, street, landmark, city, state, mobileNo, postalCode } = req.body;
         const user = await prisma.user.update({
             where: { id: req.userId },
@@ -78,12 +94,18 @@ export const updateAddressById = async (req, res) => {
                 deliveryAddresses: {
                     update: {
                         where: { id: addressId },
-                        data: { name, street, landmark, city, state, mobileNo, postalCode }
-                    }
-                }
-            }
+                        data: { name, street, landmark, city, state, mobileNo, postalCode },
+                    },
+                },
+            },
         });
-        res.status(200).json({ success: true, message: "Address updated successfully", data: user });
+        res
+            .status(200)
+            .json({
+            success: true,
+            message: "Address updated successfully",
+            data: user,
+        });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -92,16 +114,22 @@ export const updateAddressById = async (req, res) => {
 // Remove user address
 export const removeAddressById = async (req, res) => {
     try {
-        const addressId = parseInt(req.params.addressId);
+        const addressId = req.params.addressId;
         const user = await prisma.user.update({
             where: { id: req.userId },
             data: {
                 deliveryAddresses: {
-                    delete: { id: addressId }
-                }
-            }
+                    delete: { id: addressId },
+                },
+            },
         });
-        res.status(200).json({ success: true, message: "Address removed successfully", data: user });
+        res
+            .status(200)
+            .json({
+            success: true,
+            message: "Address removed successfully",
+            data: user,
+        });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -113,17 +141,21 @@ export const forgotPassword = async (req, res) => {
         const { email } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user)
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
         const securityCode = generateOTP();
         await prisma.user.update({
             where: { email },
             data: {
                 securityCode,
-                securityCodeExpires: new Date(Date.now() + 30 * 60 * 1000) // 30 minutes
-            }
+                securityCodeExpires: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+            },
         });
         await sendSecurityCode(email, securityCode);
-        res.status(200).json({ success: true, message: "Security code sent to your email" });
+        res
+            .status(200)
+            .json({ success: true, message: "Security code sent to your email" });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -134,8 +166,12 @@ export const verifyOtpAndResetPassword = async (req, res) => {
     try {
         const { email, securityCode, newPassword } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user || user.securityCode !== securityCode || user.securityCodeExpires < new Date()) {
-            return res.status(400).json({ success: false, message: "Invalid or expired security code" });
+        if (!user ||
+            user.securityCode !== securityCode ||
+            user.securityCodeExpires < new Date()) {
+            return res
+                .status(400)
+                .json({ success: false, message: "Invalid or expired security code" });
         }
         // Hash the password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -144,10 +180,12 @@ export const verifyOtpAndResetPassword = async (req, res) => {
             data: {
                 password: hashedPassword,
                 securityCode: null,
-                securityCodeExpires: null
-            }
+                securityCodeExpires: null,
+            },
         });
-        res.status(200).json({ success: true, message: "Password reset successfully" });
+        res
+            .status(200)
+            .json({ success: true, message: "Password reset successfully" });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -159,11 +197,18 @@ export const resendSecurityCode = async (req, res) => {
         const { email } = req.body;
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user)
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res
+                .status(404)
+                .json({ success: false, message: "User not found" });
         const now = new Date();
         const isCodeValid = user.securityCodeExpires && user.securityCodeExpires > now;
         if (isCodeValid) {
-            return res.status(400).json({ success: false, message: "A security code has already been sent. Please use the existing code." });
+            return res
+                .status(400)
+                .json({
+                success: false,
+                message: "A security code has already been sent. Please use the existing code.",
+            });
         }
         // Generate new security code and update in the database
         const securityCode = generateOTP();
@@ -171,12 +216,14 @@ export const resendSecurityCode = async (req, res) => {
             where: { email },
             data: {
                 securityCode,
-                securityCodeExpires: new Date(Date.now() + 30 * 60 * 1000)
-            }
+                securityCodeExpires: new Date(Date.now() + 30 * 60 * 1000),
+            },
         });
         // Send the new security code via email
         await sendSecurityCode(email, securityCode);
-        res.status(200).json({ success: true, message: "New security code sent to your email" });
+        res
+            .status(200)
+            .json({ success: true, message: "New security code sent to your email" });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -189,7 +236,13 @@ export const deleteUserById = async (req, res) => {
         const deletedUser = await prisma.user.delete({
             where: { id: userId },
         });
-        res.status(200).json({ success: true, message: "User deleted successfully", data: deletedUser });
+        res
+            .status(200)
+            .json({
+            success: true,
+            message: "User deleted successfully",
+            data: deletedUser,
+        });
     }
     catch (error) {
         res.status(500).json({ success: false, message: error.message });

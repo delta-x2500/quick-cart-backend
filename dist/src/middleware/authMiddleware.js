@@ -38,24 +38,20 @@ export const protect = async (req, res, next) => {
             where: {
                 id: decoded.id,
             },
-            include: {
-                roleRelation: true, // Include RBAC role
-            },
+            // Note: RBAC fields (roleRelation, permissions) not implemented in schema
         });
         if (!user) {
             return res
                 .status(401)
                 .json({ success: false, message: "User not found" });
         }
-        // Attach user with RBAC info to request
+        // Attach user info to request
         req.user = {
             id: user.id,
             role: user.role,
-            roleId: user.roleId,
-            permissions: [
-                ...(user.roleRelation?.permissions || []),
-                ...user.permissions,
-            ],
+            // TODO: Add RBAC support if needed (requires schema changes)
+            // roleId: user.roleId,
+            // permissions: user.permissions
         };
         req.userId = user.id;
         next();

@@ -47,9 +47,7 @@ export const updateWalletBalance = async (req, res) => {
             where: {
                 userId,
             },
-            include: {
-                transactions: true,
-            },
+            // TODO: Add transactions relation to Wallet model in schema if transaction tracking is needed
         });
         if (!wallet) {
             return res.status(404).json({ error: "Wallet not found" });
@@ -60,12 +58,13 @@ export const updateWalletBalance = async (req, res) => {
             },
             data: {
                 balance: wallet.balance + amount,
-                transactions: {
-                    create: {
-                        type: amount >= 0 ? "TOPUP" : "PURCHASE",
-                        amount: Math.abs(amount),
-                    },
-                },
+                // TODO: Transaction tracking disabled - add to schema first
+                // transactions: {
+                //   create: {
+                //     type: amount >= 0 ? "TOPUP" : "PURCHASE",
+                //     amount: Math.abs(amount),
+                //   },
+                // },
             },
         });
         res.json(updatedWallet);
@@ -76,21 +75,32 @@ export const updateWalletBalance = async (req, res) => {
     }
 };
 // Get Transaction History
+// TODO: Disabled - requires transactions relation in Wallet model
 export const getTransactionHistory = async (req, res) => {
     try {
         const { userId } = req.params;
-        const wallet = await prisma.wallet.findUnique({
-            where: {
-                userId,
-            },
-            include: {
-                transactions: true,
-            },
+        // Transaction history feature not implemented yet
+        // Requires adding Transaction model and relation to Wallet in Prisma schema
+        return res.status(501).json({
+            error: "Transaction history not implemented",
+            message: "This feature requires database schema updates",
         });
+        /* Original implementation - commented out until schema is updated
+        const wallet = await prisma.wallet.findUnique({
+          where: {
+            userId,
+          },
+          include: {
+            transactions: true,
+          },
+        });
+    
         if (!wallet) {
-            return res.status(404).json({ error: "Wallet not found" });
+          return res.status(404).json({ error: "Wallet not found" });
         }
+    
         res.json({ transactions: wallet.transactions });
+        */
     }
     catch (error) {
         console.error(error);

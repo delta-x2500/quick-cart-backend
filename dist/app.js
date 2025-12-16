@@ -17,7 +17,6 @@ import walletRoute from "./src/routes/wallet.route.js";
 import pickupstationRoute from "./src/routes/pickupstation.route.js";
 import messageRoute from "./src/routes/message.route.js";
 import paymentRoute from "./src/routes/payment.route.js";
-import vendorRoute from "./src/routes/vendor.route.js";
 // Initialize Express
 const app = express();
 // Apply rate limiting
@@ -48,7 +47,6 @@ app.use("/api/v1/wallet", walletRoute);
 app.use("/api/v1/pickupstation", pickupstationRoute);
 app.use("/api/v1/message", messageRoute);
 app.use("/api/v1/payment", paymentRoute);
-app.use("/api/v1/vendor", vendorRoute);
 // 404 handler - must be after all routes
 app.use((req, res) => {
     res.status(404).json({
@@ -75,13 +73,27 @@ app.use((err, req, res, _next) => {
         }),
     });
 });
-// Export for Vercel serverless
-export default app;
-// Only start server if not in serverless environment
-if (process.env.NODE_ENV !== "production") {
-    const PORT = process.env.PORT || "3000";
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
+// Start server for Railway deployment
+const PORT = process.env.PORT || "3000";
+const server = app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+    console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+});
+// Graceful shutdown handlers
+const gracefulShutdown = (signal) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    server.close(() => {
+        console.log("HTTP server closed.");
+        process.exit(0);
     });
-}
+    // Force shutdown after 10 seconds
+    setTimeout(() => {
+        console.error("Forced shutdown after timeout");
+        process.exit(1);
+    }, 10000);
+};
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+export default app;
 //# sourceMappingURL=app.js.map

@@ -5,7 +5,6 @@ import crypto from "crypto";
 import sendApprovalMail from "../utilities/sendApprovalMail.js";
 import sendMail from "../utilities/sendMail.js";
 import { tokenBlacklist } from "../shared/services/token-blacklist.service.js";
-import { UserRole } from "@prisma/client";
 //Register a new user with RBAC
 export const registerUser = async (req, res) => {
     try {
@@ -17,18 +16,13 @@ export const registerUser = async (req, res) => {
                 .status(400)
                 .json({ success: false, message: "User already exists" });
         }
-        // Get the appropriate role from database
-        const userRoleEnum = role === "VENDOR" ? UserRole.VENDOR : UserRole.CUSTOMER;
-        const roleRecord = await prisma.role.findUnique({
-            where: { name: userRoleEnum },
-        });
+        // TODO: RBAC not implemented in schema yet
         const newUser = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
-                role, // Keep string for backward compatibility
-                roleId: roleRecord?.id, // Link to RBAC role
+                role, // String role for now
             },
         });
         res.status(201).json({ message: "Customer account created successfully" });
@@ -42,10 +36,10 @@ export const registerUser = async (req, res) => {
 export const login = async (req, res) => {
     const { email, password } = req.body;
     try {
-        // Check if user exists with role information
+        // Check if user exists
         const user = await prisma.user.findUnique({
             where: { email },
-            include: { roleRelation: true }, // Include RBAC role
+            // TODO: RBAC (roleRelation, permissions) not implemented in schema
         });
         if (!user)
             return res.status(401).json({ message: "Invalid Credentials!" });
@@ -57,15 +51,13 @@ export const login = async (req, res) => {
         const accessTokenAge = 1000 * 60 * 15;
         // Refresh token: 7 days
         const refreshTokenAge = 1000 * 60 * 60 * 24 * 7;
-        // Create access token with RBAC info
+        // Create access token with role info
         const accessToken = jwt.sign({
             id: user.id,
             role: user.role,
-            roleId: user.roleId,
-            permissions: [
-                ...(user.roleRelation?.permissions || []),
-                ...user.permissions,
-            ],
+            // TODO: Add RBAC fields when schema supports them
+            // roleId: user.roleId,
+            // permissions: user.permissions,
         }, process.env.JWT_SECRET_KEY || "", { expiresIn: accessTokenAge });
         // Create refresh token
         const refreshToken = jwt.sign({

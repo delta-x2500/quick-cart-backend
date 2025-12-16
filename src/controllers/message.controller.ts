@@ -1,10 +1,13 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../types/index.js";
 import prisma from "../../lib/prisma.js";
 
-
-export const sendMessage = async (req: Request, res: Response): Promise<void | Response> => {
+export const sendMessage = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void | Response> => {
   const { content, receiverId } = req.body;
-  const senderId = req.user.id;
+  const senderId = req.user!.id;
 
   try {
     const message = await prisma.message.create({
@@ -16,7 +19,7 @@ export const sendMessage = async (req: Request, res: Response): Promise<void | R
     });
 
     // Emit the message to the receiver via WebSocket
-    req.io.to(receiverId).emit('newMessage', message);
+    req.io.to(receiverId).emit("newMessage", message);
 
     res.status(201).json({ success: true, message });
   } catch (error) {
@@ -24,9 +27,12 @@ export const sendMessage = async (req: Request, res: Response): Promise<void | R
   }
 };
 
-export const getMessages = async (req: Request, res: Response): Promise<void | Response> => {
-  const { userId } = req.user;
-  const { withUserId } = req.query;
+export const getMessages = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void | Response> => {
+  const userId = req.user!.id;
+  const withUserId = req.query.withUserId as string;
 
   try {
     const messages = await prisma.message.findMany({
@@ -36,7 +42,7 @@ export const getMessages = async (req: Request, res: Response): Promise<void | R
           { senderId: withUserId, receiverId: userId },
         ],
       },
-      orderBy: { sentAt: 'asc' },
+      orderBy: { sentAt: "asc" },
     });
 
     res.status(200).json({ success: true, messages });

@@ -11,7 +11,9 @@ export const uploadBanner = async (req, res) => {
         const { name, linkedProducts } = req.body;
         console.log(req.body);
         // Ensure linkedProducts is an array
-        const linkedProductsArray = Array.isArray(linkedProducts) ? linkedProducts : [];
+        const linkedProductsArray = Array.isArray(linkedProducts)
+            ? linkedProducts
+            : [];
         console.log("linkedProductsArray:", linkedProductsArray);
         const file = req.file;
         // Upload image to Cloudinary

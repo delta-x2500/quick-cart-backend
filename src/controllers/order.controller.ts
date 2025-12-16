@@ -1,9 +1,21 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
+import { AuthenticatedRequest } from "../types/index.js";
 import prisma from "../../lib/prisma.js";
 
-
-export const placeOrder = async (req: Request, res: Response): Promise<void | Response> => {
-  const { products, userId, paymentId, deliveryCharge, totalAmount, deliveryMethod, paymentMethod, type } = req.body;
+export const placeOrder = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
+  const {
+    products,
+    userId,
+    paymentId,
+    deliveryCharge,
+    totalAmount,
+    deliveryMethod,
+    paymentMethod,
+    type,
+  } = req.body;
 
   try {
     await prisma.$transaction(async (prisma) => {
@@ -18,7 +30,9 @@ export const placeOrder = async (req: Request, res: Response): Promise<void | Re
                 });
 
                 if (!productData) {
-                  throw new Error(`Product with id ${product.productId} not found.`);
+                  throw new Error(
+                    `Product with id ${product.productId} not found.`
+                  );
                 }
 
                 return {
@@ -59,11 +73,16 @@ export const placeOrder = async (req: Request, res: Response): Promise<void | Re
     res.status(201).json({ message: "Order placed successfully." });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Failed to place order: " + (error as Error).message });
+    res
+      .status(500)
+      .json({ message: "Failed to place order: " + (error as Error).message });
   }
 };
 
-export const getOrders = async (req: Request, res: Response): Promise<void | Response> => {
+export const getOrders = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     // Retrieve all orders from the database
     const orders = await prisma.order.findMany({
@@ -86,12 +105,12 @@ export const getOrders = async (req: Request, res: Response): Promise<void | Res
     });
 
     // Format the orders to include the category name, totalAmount, deliveryMethod, and paymentMethod
-    const formattedOrders = orders.map(order => ({
+    const formattedOrders = orders.map((order) => ({
       ...order,
       totalAmount: order.totalAmount,
       deliveryMethod: order.deliveryMethod,
       paymentMethod: order.paymentMethod,
-      products: order.products.map(orderProduct => ({
+      products: order.products.map((orderProduct) => ({
         ...orderProduct,
         categoryName: orderProduct.product.category?.title || null,
       })),
@@ -105,7 +124,10 @@ export const getOrders = async (req: Request, res: Response): Promise<void | Res
   }
 };
 
-export const updateOrder = async (req: Request, res: Response): Promise<void | Response> => {
+export const updateOrder = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
@@ -123,7 +145,10 @@ export const updateOrder = async (req: Request, res: Response): Promise<void | R
   }
 };
 
-export const cancelOrder = async (req: Request, res: Response): Promise<void | Response> => {
+export const cancelOrder = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     const orderId = req.params.orderId;
 
@@ -157,9 +182,12 @@ export const cancelOrder = async (req: Request, res: Response): Promise<void | R
   }
 };
 
-export const getUserOrders = async (req: Request, res: Response): Promise<void | Response> => {
+export const getUserOrders = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void | Response> => {
   try {
-    const userId = req.user._id;
+    const userId = req.user!.id;
 
     // Fetch orders for the logged-in user
     const userOrders = await prisma.order.findMany({
@@ -173,7 +201,10 @@ export const getUserOrders = async (req: Request, res: Response): Promise<void |
   }
 };
 
-export const getOrdersForStore = async (req: Request, res: Response): Promise<void | Response> => {
+export const getOrdersForStore = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     const storeId = req.params.storeId;
 
@@ -201,7 +232,10 @@ export const getOrdersForStore = async (req: Request, res: Response): Promise<vo
   }
 };
 
-export const placeVirtualOrder = async (req: Request, res: Response): Promise<void | Response> => {
+export const placeVirtualOrder = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     // Extract order details from request body
     const { products, userId } = req.body;
@@ -210,14 +244,17 @@ export const placeVirtualOrder = async (req: Request, res: Response): Promise<vo
     const newVirtualOrder = await prisma.order.create({
       data: {
         products: {
-          create: products.map(product => ({
+          create: products.map((product: any) => ({
             productId: product.productId,
             quantity: product.quantity,
             storeId: product.storeId,
           })),
         },
-        userId: userId,
+        user: {
+          connect: { id: userId },
+        },
         type: "Virtual",
+        totalAmount: 0, // Virtual orders may not have payment
       },
     });
 

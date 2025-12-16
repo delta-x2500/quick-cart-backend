@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 export declare const createProduct: (req: Request, res: Response) => Promise<void | Response>;
 export declare const getProducts: (req: Request, res: Response) => Promise<void | Response>;
 export declare const searchProducts: (req: Request, res: Response) => Promise<void | Response>;

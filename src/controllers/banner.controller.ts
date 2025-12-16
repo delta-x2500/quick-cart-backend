@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 import { v2 as cloudinary } from "cloudinary";
 import prisma from "../../lib/prisma.js";
 
@@ -9,23 +9,27 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-export const uploadBanner = async (req: Request, res: Response): Promise<void | Response> => {
+export const uploadBanner = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     const { name, linkedProducts } = req.body;
     console.log(req.body);
-    
 
     // Ensure linkedProducts is an array
-    const linkedProductsArray = Array.isArray(linkedProducts) ? linkedProducts : [];
+    const linkedProductsArray = Array.isArray(linkedProducts)
+      ? linkedProducts
+      : [];
     console.log("linkedProductsArray:", linkedProductsArray);
-    
+
     const file = req.file;
-    
+
     // Upload image to Cloudinary
     const cloudinaryUpload = await cloudinary.uploader.upload(file.path, {
       folder: "banner_images",
     });
-    
+
     // Create a new banner
     const banner = await prisma.banner.create({
       data: {
@@ -40,9 +44,8 @@ export const uploadBanner = async (req: Request, res: Response): Promise<void | 
         },
       },
     });
-    
+
     res.status(201).json(banner);
-    
 
     res.status(201).json(banner);
   } catch (error) {
@@ -51,7 +54,10 @@ export const uploadBanner = async (req: Request, res: Response): Promise<void | 
   }
 };
 
-export const getBanners = async (req: Request, res: Response): Promise<void | Response> => {
+export const getBanners = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     // Retrieve all banners with linked products
     const banners = await prisma.banner.findMany({
@@ -71,7 +77,10 @@ export const getBanners = async (req: Request, res: Response): Promise<void | Re
   }
 };
 
-export const getBannerById = async (req: Request, res: Response): Promise<void | Response> => {
+export const getBannerById = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   const bannerId = req.params.id;
   try {
     const banner = await prisma.banner.findUnique({
@@ -92,13 +101,16 @@ export const getBannerById = async (req: Request, res: Response): Promise<void |
   }
 };
 
-export const updateBanner = async (req: Request, res: Response): Promise<void | Response> => {
+export const updateBanner = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     const { bannerId } = req.params;
     const { name, linkedProducts } = req.body;
     const file = req.file;
 
-    let updatedBannerData = { name };
+    let updatedBannerData: any = { name };
 
     if (file) {
       const cloudinaryUpload = await cloudinary.uploader.upload(file.path, {
@@ -110,7 +122,7 @@ export const updateBanner = async (req: Request, res: Response): Promise<void | 
     if (linkedProducts) {
       updatedBannerData.linkedProducts = {
         deleteMany: {},
-        create: linkedProducts.map((productId) => ({
+        create: linkedProducts.map((productId: string) => ({
           product: {
             connect: { id: productId },
           },
@@ -131,7 +143,10 @@ export const updateBanner = async (req: Request, res: Response): Promise<void | 
   }
 };
 
-export const deleteBanner = async (req: Request, res: Response): Promise<void | Response> => {
+export const deleteBanner = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   const bannerId = req.params.id;
 
   try {

@@ -1,6 +1,6 @@
 import prisma from "../../lib/prisma.js";
 export const placeOrder = async (req, res) => {
-    const { products, userId, paymentId, deliveryCharge, totalAmount, deliveryMethod, paymentMethod, type } = req.body;
+    const { products, userId, paymentId, deliveryCharge, totalAmount, deliveryMethod, paymentMethod, type, } = req.body;
     try {
         await prisma.$transaction(async (prisma) => {
             const newOrder = await prisma.order.create({
@@ -50,7 +50,9 @@ export const placeOrder = async (req, res) => {
     }
     catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Failed to place order: " + error.message });
+        res
+            .status(500)
+            .json({ message: "Failed to place order: " + error.message });
     }
 };
 export const getOrders = async (req, res) => {
@@ -75,12 +77,12 @@ export const getOrders = async (req, res) => {
             },
         });
         // Format the orders to include the category name, totalAmount, deliveryMethod, and paymentMethod
-        const formattedOrders = orders.map(order => ({
+        const formattedOrders = orders.map((order) => ({
             ...order,
             totalAmount: order.totalAmount,
             deliveryMethod: order.deliveryMethod,
             paymentMethod: order.paymentMethod,
-            products: order.products.map(orderProduct => ({
+            products: order.products.map((orderProduct) => ({
                 ...orderProduct,
                 categoryName: orderProduct.product.category?.title || null,
             })),
@@ -140,7 +142,7 @@ export const cancelOrder = async (req, res) => {
 };
 export const getUserOrders = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user.id;
         // Fetch orders for the logged-in user
         const userOrders = await prisma.order.findMany({
             where: { userId: userId },
@@ -186,14 +188,17 @@ export const placeVirtualOrder = async (req, res) => {
         const newVirtualOrder = await prisma.order.create({
             data: {
                 products: {
-                    create: products.map(product => ({
+                    create: products.map((product) => ({
                         productId: product.productId,
                         quantity: product.quantity,
                         storeId: product.storeId,
                     })),
                 },
-                userId: userId,
+                user: {
+                    connect: { id: userId },
+                },
                 type: "Virtual",
+                totalAmount: 0, // Virtual orders may not have payment
             },
         });
         res.status(201).json(newVirtualOrder);

@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import { v2 as cloudinary } from 'cloudinary'
-import prisma from '../../lib/prisma.js';
+import { Request, Response } from "express";
+import { v2 as cloudinary } from "cloudinary";
+import prisma from "../../lib/prisma.js";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -9,9 +9,11 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-
 // Create a new product
-export const createProduct = async (req: Request, res: Response): Promise<void | Response> => {
+export const createProduct = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     let {
       name,
@@ -30,7 +32,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void |
     } = req.body;
 
     // Handle variations
-    if (typeof variations === 'string') {
+    if (typeof variations === "string") {
       try {
         variations = JSON.parse(variations);
       } catch (error) {
@@ -42,7 +44,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void |
     price = parseFloat(price);
     discount_price = discount_price ? parseFloat(discount_price) : undefined;
     stock = stock ? parseInt(stock, 10) : undefined;
-    featured = featured === 'true';
+    featured = featured === "true";
     totalSale = totalSale ? parseInt(totalSale, 10) : 0;
 
     // Validate input
@@ -74,13 +76,13 @@ export const createProduct = async (req: Request, res: Response): Promise<void |
     }
 
     // Validate that at least one image is provided
-    if (!req.files || req.files.length === 0) {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       return res.status(400).json({ error: "At least one image is required" });
     }
 
     // Upload images
     const uploadedImages = await Promise.all(
-      req.files.map(async (file) => {
+      (req.files as Express.Multer.File[]).map(async (file) => {
         try {
           const result = await cloudinary.uploader.upload(file.path, {
             folder: "products_images",
@@ -98,7 +100,7 @@ export const createProduct = async (req: Request, res: Response): Promise<void |
     );
 
     // Create a new Product
-    const productData = {
+    const productData: any = {
       name,
       description,
       price,
@@ -138,7 +140,10 @@ export const createProduct = async (req: Request, res: Response): Promise<void |
 };
 
 // Fetch products and include relevant data
-export const getProducts = async (req: Request, res: Response): Promise<void | Response> => {
+export const getProducts = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   try {
     const products = await prisma.product.findMany({
       include: {
@@ -172,7 +177,8 @@ export const getProducts = async (req: Request, res: Response): Promise<void | R
     const formattedProducts = products.map((product) => {
       const averageRating =
         product.ratings.length > 0
-          ? product.ratings.reduce((sum, rating) => sum + rating.rating, 0) / product.ratings.length
+          ? product.ratings.reduce((sum, rating) => sum + rating.rating, 0) /
+            product.ratings.length
           : null;
 
       return {
@@ -200,44 +206,49 @@ export const getProducts = async (req: Request, res: Response): Promise<void | R
 };
 
 // Search products
-export const searchProducts = async (req: Request, res: Response): Promise<void | Response> => {
-    try {
-      const { searchText, category, brand } = req.query;
-      const query = {};
-  
-      if (searchText) {
-        const searchTextRegex = `%${searchText}%`;
-        query.OR = [
-          { name: { contains: searchTextRegex, mode: 'insensitive' } },
-          { description: { contains: searchTextRegex, mode: 'insensitive' } },
-        ];
-      }
-  
-      // Filter by category, brand, condition, etc.
-      if (category) {
-        query.category = category;
-      }
-  
-      if (brand) {
-        query.brand = brand;
-      }
-  
-      const products = await prisma.product.findMany({
-        where: query,
-      });
-  
-      res.json(products);
-    } catch (error) {
-      console.error("Error searching products:", error);
-      res.status(500).json({ error: "Internal Server Error" });
+export const searchProducts = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
+  try {
+    const { searchText, category, brand } = req.query;
+    const query: any = {};
+
+    if (searchText) {
+      const searchTextRegex = `%${searchText}%`;
+      query.OR = [
+        { name: { contains: searchTextRegex, mode: "insensitive" } },
+        { description: { contains: searchTextRegex, mode: "insensitive" } },
+      ];
     }
-  };
-  
+
+    // Filter by category, brand, condition, etc.
+    if (category) {
+      query.category = category;
+    }
+
+    if (brand) {
+      query.brand = brand;
+    }
+
+    const products = await prisma.product.findMany({
+      where: query,
+    });
+
+    res.json(products);
+  } catch (error) {
+    console.error("Error searching products:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 // Update a product by ID
-export const updateProduct = async (req: Request, res: Response): Promise<void | Response> => {
+export const updateProduct = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
+  const productId = req.params.id;
   try {
-    const productId = req.params.id;
     const updatedFields = req.body;
 
     // Update the product in the database
@@ -261,12 +272,13 @@ export const updateProduct = async (req: Request, res: Response): Promise<void |
 };
 
 // Delete a product by ID
-export const deleteProduct = async (req: Request, res: Response): Promise<void | Response> => {
+export const deleteProduct = async (
+  req: Request,
+  res: Response
+): Promise<void | Response> => {
   const productId = req.params.id;
   try {
-
     console.log(`Deleting product with id ${productId}`);
-    
 
     // Delete the product from Prisma
     await prisma.product.delete({ where: { id: productId } });

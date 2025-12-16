@@ -1,5 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
-import prisma from '../../lib/prisma.js';
+import { v2 as cloudinary } from "cloudinary";
+import prisma from "../../lib/prisma.js";
 // Configure Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -11,7 +11,7 @@ export const createProduct = async (req, res) => {
     try {
         let { name, description, price, discount_price, category, subcategory, brand, variations, sellerId, featured, condition, stock, totalSale, } = req.body;
         // Handle variations
-        if (typeof variations === 'string') {
+        if (typeof variations === "string") {
             try {
                 variations = JSON.parse(variations);
             }
@@ -23,7 +23,7 @@ export const createProduct = async (req, res) => {
         price = parseFloat(price);
         discount_price = discount_price ? parseFloat(discount_price) : undefined;
         stock = stock ? parseInt(stock, 10) : undefined;
-        featured = featured === 'true';
+        featured = featured === "true";
         totalSale = totalSale ? parseInt(totalSale, 10) : 0;
         // Validate input
         if (!name || !description || isNaN(price) || !sellerId) {
@@ -45,7 +45,7 @@ export const createProduct = async (req, res) => {
             return res.status(400).json({ error: "Selected seller does not exist" });
         }
         // Validate that at least one image is provided
-        if (!req.files || req.files.length === 0) {
+        if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
             return res.status(400).json({ error: "At least one image is required" });
         }
         // Upload images
@@ -135,7 +135,8 @@ export const getProducts = async (req, res) => {
         // Map the response to include category, subcategory names, average rating, and lastUpdated
         const formattedProducts = products.map((product) => {
             const averageRating = product.ratings.length > 0
-                ? product.ratings.reduce((sum, rating) => sum + rating.rating, 0) / product.ratings.length
+                ? product.ratings.reduce((sum, rating) => sum + rating.rating, 0) /
+                    product.ratings.length
                 : null;
             return {
                 ...product,
@@ -168,8 +169,8 @@ export const searchProducts = async (req, res) => {
         if (searchText) {
             const searchTextRegex = `%${searchText}%`;
             query.OR = [
-                { name: { contains: searchTextRegex, mode: 'insensitive' } },
-                { description: { contains: searchTextRegex, mode: 'insensitive' } },
+                { name: { contains: searchTextRegex, mode: "insensitive" } },
+                { description: { contains: searchTextRegex, mode: "insensitive" } },
             ];
         }
         // Filter by category, brand, condition, etc.
@@ -191,8 +192,8 @@ export const searchProducts = async (req, res) => {
 };
 // Update a product by ID
 export const updateProduct = async (req, res) => {
+    const productId = req.params.id;
     try {
-        const productId = req.params.id;
         const updatedFields = req.body;
         // Update the product in the database
         const updatedProduct = await prisma.product.update({

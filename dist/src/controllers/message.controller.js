@@ -11,7 +11,7 @@ export const sendMessage = async (req, res) => {
             },
         });
         // Emit the message to the receiver via WebSocket
-        req.io.to(receiverId).emit('newMessage', message);
+        req.io.to(receiverId).emit("newMessage", message);
         res.status(201).json({ success: true, message });
     }
     catch (error) {
@@ -19,8 +19,8 @@ export const sendMessage = async (req, res) => {
     }
 };
 export const getMessages = async (req, res) => {
-    const { userId } = req.user;
-    const { withUserId } = req.query;
+    const userId = req.user.id;
+    const withUserId = req.query.withUserId;
     try {
         const messages = await prisma.message.findMany({
             where: {
@@ -29,7 +29,7 @@ export const getMessages = async (req, res) => {
                     { senderId: withUserId, receiverId: userId },
                 ],
             },
-            orderBy: { sentAt: 'asc' },
+            orderBy: { sentAt: "asc" },
         });
         res.status(200).json({ success: true, messages });
     }
