@@ -31,8 +31,8 @@ jobs:
             git reset --hard
             git pull origin main
 
-            # Install dependencies
-            npm install --production
+            # Install dependencies production level
+            npm install --production 
 
             # Generate Prisma Client
             npx prisma generate
