@@ -97,13 +97,31 @@ app.use(
   }
 );
 
-// Export for Vercel serverless
-export default app;
+// Start server for Railway deployment
+const PORT = process.env.PORT || "3000";
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+});
 
-// Only start server if not in serverless environment
-if (process.env.NODE_ENV !== "production") {
-  const PORT: string = process.env.PORT || "3000";
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Graceful shutdown handlers
+const gracefulShutdown = (signal: string) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+  server.close(() => {
+    console.log("HTTP server closed.");
+    process.exit(0);
   });
-}
+
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+export default app;
