@@ -1,0 +1,50 @@
+name: Deploy Quick-Cart Backend to EC2
+
+on:
+  push:
+    branches:
+      - main # Deploy only on main branch
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the latest code from GitHub
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }} # Your EC2 Public DNS or IP
+          username: ${{ secrets.EC2_USER }} # Usually "ubuntu" or "ec2-user"
+          key: ${{ secrets.EC2_PRIVATE_KEY }} # Private SSH key
+          port: 22
+          script: |
+            # Navigate to app directory
+            cd /home/${{ secrets.EC2_USER }}/quick-cart-backend
+
+            # Reset and pull latest code
+            git reset --hard
+            git pull origin main
+
+            # Install dependencies
+            npm install --production
+
+            # Generate Prisma Client
+            npx prisma generate
+
+            # Build TypeScript
+            npm run build
+
+            # Write environment variables from GitHub secret
+            echo "${{ secrets.APP_ENV_FILE }}" > .env
+
+            # Restart the app using PM2
+            pm2 restart quick-cart-backend || pm2 start dist/app.js --name "quick-cart-backend"
+
+            # Save PM2 process list
+            pm2 save
