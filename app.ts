@@ -3,7 +3,6 @@ import cors from "cors";
 import { setupSwagger } from "./src/config/swagger.config.js";
 import { globalLimiter } from "./src/middleware/rate-limit.js";
 
-import swaggerRoute from "./src/routes/swagger.route.js";
 import userRoute from "./src/routes/user.route.js";
 import authRoute from "./src/routes/auth.route.js";
 import productRoute from "./src/routes/product.route.js";
@@ -38,9 +37,6 @@ app.use(
     credentials: true,
   })
 );
-
-// Default route to serve the OpenAPI documentation
-app.use("/", swaggerRoute);
 
 // General Routes
 app.use("/api/v1/user", userRoute);
