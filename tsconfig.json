@@ -20,7 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "include": ["app.ts", "lib/**/*.ts", "src/**/*.ts", "api/**/*.ts"],
   "exclude": [
