@@ -1,38 +1,73 @@
-name: Deploy Quick-Cart Backend to EC2
+name: Test and Deploy to EC2
 
 on:
   push:
     branches:
-      - main # Deploy only on main branch
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  test:
+    name: Run Tests and Build
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the latest code from GitHub
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Deploy to EC2
-      - name: Deploy to EC2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+      - name: Build project
+        run: npm run build
+
+      - name: Check build artifacts
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed - dist folder not found"
+            exit 1
+          fi
+          echo "Build successful - dist folder exists"
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.EC2_HOST }} # Your EC2 Public DNS or IP
-          username: ${{ secrets.EC2_USER }} # Usually "ubuntu" or "ec2-user"
-          key: ${{ secrets.EC2_PRIVATE_KEY }} # Private SSH key
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
           script: |
             # Navigate to app directory
             cd /home/${{ secrets.EC2_USER }}/quick-cart-backend
 
-            # Reset and pull latest code
-            git reset --hard
-            git pull origin main
+            # Pull latest code
+            git fetch origin
+            git reset --hard origin/main
 
-            # Install dependencies production level
-            npm install --production 
+            # Install dependencies
+            npm install --production
 
             # Generate Prisma Client
             npx prisma generate
@@ -40,7 +75,7 @@ jobs:
             # Build TypeScript
             npm run build
 
-            # Write environment variables from GitHub secret
+            # Update environment variables
             echo "${{ secrets.APP_ENV_FILE }}" > .env
 
             # Restart the app using PM2
@@ -48,3 +83,7 @@ jobs:
 
             # Save PM2 process list
             pm2 save
+
+      - name: Deployment status
+        if: success()
+        run: echo "✅ Deployment successful!"
