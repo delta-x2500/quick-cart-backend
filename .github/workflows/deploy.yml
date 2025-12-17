@@ -51,7 +51,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
-      - name: Deploy to EC2 via SSH
+      - name: Install system dependencies
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -59,8 +59,53 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
           script: |
+            # Update package list
+            sudo apt-get update -y
+
+            # Install Git if not present
+            if ! command -v git &> /dev/null; then
+              echo "Installing Git..."
+              sudo apt-get install -y git
+            else
+              echo "Git already installed: $(git --version)"
+            fi
+
+            # Install Node.js 20 if not present
+            if ! command -v node &> /dev/null; then
+              echo "Installing Node.js 20..."
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            else
+              echo "Node.js already installed: $(node --version)"
+            fi
+
+            # Install PM2 globally if not present
+            if ! command -v pm2 &> /dev/null; then
+              echo "Installing PM2..."
+              sudo npm install -g pm2
+            else
+              echo "PM2 already installed: $(pm2 --version)"
+            fi
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Create app directory if it doesn't exist
+            mkdir -p /home/${{ secrets.EC2_USER }}/quick-cart-backend
+
             # Navigate to app directory
             cd /home/${{ secrets.EC2_USER }}/quick-cart-backend
+
+            # Initialize git repo if needed
+            if [ ! -d .git ]; then
+              git init
+              git remote add origin https://github.com/delta-x2500/quick-cart-backend.git
+            fi
 
             # Pull latest code
             git fetch origin
@@ -84,6 +129,15 @@ jobs:
             # Save PM2 process list
             pm2 save
 
+            # Setup PM2 to start on boot
+            pm2 startup systemd -u ${{ secrets.EC2_USER }} --hp /home/${{ secrets.EC2_USER }} || true
+
       - name: Deployment status
         if: success()
-        run: echo "✅ Deployment successful!"
+        run: |
+          echo "✅ Deployment successful!"
+          echo ""
+          echo "================================================"
+          echo "📚 API Documentation Available At:"
+          echo "http://${{ secrets.EC2_HOST }}:3000/api-doc"
+          echo "================================================"
