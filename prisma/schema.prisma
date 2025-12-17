@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String    @id @default(uuid())
   name                String
   email               String    @unique
   avatar              String?
@@ -20,7 +20,7 @@ model User {
   deliveryAddresses   Address[]
   role                String    @default("CUSTOMER")
   businessName        String?
-  storeId             String?   @db.ObjectId
+  storeId             String?
   createdAt           DateTime  @default(now())
   resetPasswordToken  String?
   resetPasswordTime   DateTime?
@@ -37,20 +37,19 @@ model User {
 
   Wallet Wallet[]
 
-  sentMessages      Message[] @relation("Sender")
-  receivedMessages  Message[] @relation("Receiver")
+  sentMessages     Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Receiver")
 }
 
-
 model PickupStation {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String  @id @default(uuid())
   name      String
-  addressId String   @db.ObjectId
-  address   Address  @relation(fields: [addressId], references: [id])
+  addressId String
+  address   Address @relation(fields: [addressId], references: [id])
 }
 
 model Address {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  id            String          @id @default(uuid())
   name          String
   mobileNo      String
   street        String
@@ -59,14 +58,13 @@ model Address {
   landmark      String
   postalCode    String?
   default       Boolean         @default(false)
-  userId        String          @db.ObjectId
+  userId        String
   user          User            @relation(fields: [userId], references: [id])
   pickupStation PickupStation[]
 }
 
-
 model Store {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  id           String    @id @default(uuid())
   name         String
   businessName String
   phoneNumber  String
@@ -74,7 +72,7 @@ model Store {
   address      String
   city         String
   state        String
-  ownerId      String    @unique @db.ObjectId
+  ownerId      String    @unique
   products     Product[]
 
   owner User @relation("UserStore", fields: [ownerId], references: [id])
@@ -83,16 +81,16 @@ model Store {
 }
 
 model Product {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  id            String      @id @default(uuid())
   name          String
   description   String
   images        String[]
   price         Float
   discountPrice Float?      @map("discount_price")
-  categoryId    String      @db.ObjectId
-  subcategoryId String      @db.ObjectId
+  categoryId    String
+  subcategoryId String
   condition     String
-  storeId       String      @db.ObjectId
+  storeId       String
   variations    Variation[]
   ratings       Rating[]
   featured      Boolean
@@ -112,10 +110,10 @@ model Product {
 }
 
 model Variation {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(uuid())
   name      String
   options   String[]
-  productId String   @db.ObjectId
+  productId String
 
   product Product @relation(fields: [productId], references: [id])
 
@@ -123,16 +121,16 @@ model Variation {
 }
 
 model Banner {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
+  id             String            @id @default(uuid())
   name           String
   imageUrl       String
   linkedProducts BannerOnProduct[]
 }
 
 model BannerOnProduct {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  bannerId  String @db.ObjectId
-  productId String @db.ObjectId
+  id        String @id @default(uuid())
+  bannerId  String
+  productId String
 
   banner  Banner  @relation(fields: [bannerId], references: [id])
   product Product @relation(fields: [productId], references: [id])
@@ -141,17 +139,17 @@ model BannerOnProduct {
 }
 
 model Rating {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  id        String @id @default(uuid())
   user      String
   rating    Float
   comment   String
-  productId String @db.ObjectId
+  productId String
 
   product Product @relation(fields: [productId], references: [id])
 }
 
 model Category {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  id            String        @id @default(uuid())
   title         String
   subTitle      String
   imageUrl      String?
@@ -160,37 +158,37 @@ model Category {
 }
 
 model Subcategory {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  id         String    @id @default(uuid())
   title      String
   imageUrl   String?
-  categoryId String    @db.ObjectId
+  categoryId String
   category   Category  @relation("CategorySubcategories", fields: [categoryId], references: [id], onDelete: Cascade)
   products   Product[]
 }
 
 model Cart {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  user   User    @relation(fields: [userId], references: [id])
-  userId String  @db.ObjectId
+  id     String     @id @default(uuid())
+  user   User       @relation(fields: [userId], references: [id])
+  userId String
   items  CartItem[]
 
   @@index([userId])
 }
 
 model CartItem {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  quantity          Int
-  checked           Boolean
-  selectedVariations Json?
-  shipmentOption    String?
-  deliveryFee       Float?
-  selectedCity      String?
-  selectedState     String?
+  id                    String  @id @default(uuid())
+  quantity              Int
+  checked               Boolean
+  selectedVariations    Json?
+  shipmentOption        String?
+  deliveryFee           Float?
+  selectedCity          String?
+  selectedState         String?
   selectedPickupStation String?
-  selectedAddress   String?
-  discountPrice     Float?
-  productId         String   @db.ObjectId
-  cartId            String   @db.ObjectId
+  selectedAddress       String?
+  discountPrice         Float?
+  productId             String
+  cartId                String
 
   product Product @relation(fields: [productId], references: [id])
   cart    Cart    @relation(fields: [cartId], references: [id])
@@ -199,18 +197,18 @@ model CartItem {
 }
 
 model VariationSelection {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  variation        Variation @relation(fields: [variationId], references: [id])
-  variationId      String    @db.ObjectId
-  selectedOption   String
-  cartItemId       String    @db.ObjectId
-  cartItem         CartItem  @relation(fields: [cartItemId], references: [id])
+  id             String    @id @default(uuid())
+  variation      Variation @relation(fields: [variationId], references: [id])
+  variationId    String
+  selectedOption String
+  cartItemId     String
+  cartItem       CartItem  @relation(fields: [cartItemId], references: [id])
 }
 
 model Order {
-  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  id             String         @id @default(uuid())
   products       OrderProduct[]
-  userId         String         @db.ObjectId
+  userId         String
   user           User           @relation(fields: [userId], references: [id])
   status         String         @default("Pending")
   trackingNumber String?
@@ -225,51 +223,50 @@ model Order {
 }
 
 model OrderProduct {
-  id               String      @id @default(auto()) @map("_id") @db.ObjectId
-  productId        String      @db.ObjectId
-  orderId          String      @db.ObjectId
-  storeId          String      @db.ObjectId
-  quantity         Int
-  product          Product     @relation(fields: [productId], references: [id])
-  order            Order       @relation(fields: [orderId], references: [id])
-  store            Store       @relation(fields: [storeId], references: [id])
+  id                 String  @id @default(uuid())
+  productId          String
+  orderId            String
+  storeId            String
+  quantity           Int
+  product            Product @relation(fields: [productId], references: [id])
+  order              Order   @relation(fields: [orderId], references: [id])
+  store              Store   @relation(fields: [storeId], references: [id])
   selectedVariations Json?
-  deliveryCharge    Float?
+  deliveryCharge     Float?
 }
 
-
 model OrderPayment {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  orderId       String  @db.ObjectId @unique
-  order         Order?  @relation("OrderPayment", fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id            String @id @default(uuid())
+  orderId       String @unique
+  order         Order? @relation("OrderPayment", fields: [orderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   amount        Float
-  transactionId String  @default(uuid())
+  transactionId String @default(uuid())
 }
 
 model Wallet {
-  id      String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId  String  @db.ObjectId @unique
-  user    User    @relation(fields: [userId], references: [id])
-  balance Float   @default(0.0)
+  id      String @id @default(uuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id])
+  balance Float  @default(0.0)
 }
 
 model PaymentMethod {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  method       String  @unique
-  displayName  String
-  provider     String
+  id          String @id @default(uuid())
+  method      String @unique
+  displayName String
+  provider    String
 }
 
 model Message {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(uuid())
   content    String
-  senderId   String   @db.ObjectId
-  receiverId String   @db.ObjectId
+  senderId   String
+  receiverId String
   sentAt     DateTime @default(now())
   isRead     Boolean  @default(false)
 
-  sender     User     @relation("Sender", fields: [senderId], references: [id])
-  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+  sender   User @relation("Sender", fields: [senderId], references: [id])
+  receiver User @relation("Receiver", fields: [receiverId], references: [id])
 
   @@index([senderId])
   @@index([receiverId])
