@@ -34,7 +34,12 @@ setupSwagger(app);
 
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL || "", process.env.ADMIN_URL || ""],
+    origin: [
+      process.env.CLIENT_URL || "",
+      process.env.ADMIN_URL || "",
+      "http://localhost:5173", // Vendor dashboard local development
+      "http://localhost:5174", // Additional dev port
+    ],
     credentials: true,
   })
 );
