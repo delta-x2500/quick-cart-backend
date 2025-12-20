@@ -33,10 +33,15 @@ app.use(express.urlencoded({ extended: true }));
 setupSwagger(app);
 
 // CORS configuration - allow all origins in development
-// TODO: Restrict origins in production
+// Using a function to reflect the request origin (required when credentials: true)
+// TODO: Add an allowlist of origins in production
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      // or any origin in development
+      callback(null, true);
+    },
     credentials: true,
   })
 );
