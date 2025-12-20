@@ -32,14 +32,11 @@ app.use(express.urlencoded({ extended: true }));
 // Setup Swagger Documentation
 setupSwagger(app);
 
+// CORS configuration - allow all origins in development
+// TODO: Restrict origins in production
 app.use(
   cors({
-    origin: [
-      process.env.CLIENT_URL || "",
-      process.env.ADMIN_URL || "",
-      "http://localhost:5173", // Vendor dashboard local development
-      "http://localhost:5174", // Additional dev port
-    ],
+    origin: "*",
     credentials: true,
   })
 );
