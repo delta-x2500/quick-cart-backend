@@ -31,19 +31,59 @@ export const registerUser = async (
         .json({ success: false, message: "User already exists" });
     }
 
-    // TODO: RBAC not implemented in schema yet
+    // Create new user
     const newUser = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role, // String role for now
+        role: role || "CUSTOMER",
       },
     });
 
-    res.status(201).json({ message: "Customer account created successfully" });
+    // Generate JWT token for auto-login after registration
+    const accessTokenAge = 1000 * 60 * 15; // 15 minutes
+    const refreshTokenAge = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+    const accessToken = jwt.sign(
+      {
+        id: newUser.id,
+        role: newUser.role,
+      } as JwtPayload,
+      process.env.JWT_SECRET_KEY || "",
+      { expiresIn: accessTokenAge }
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        id: newUser.id,
+        type: "refresh",
+      } as RefreshTokenPayload,
+      process.env.JWT_SECRET_KEY || "",
+      { expiresIn: refreshTokenAge }
+    );
+
+    // Remove password from response
+    const { password: userPassword, ...userInfo } = newUser;
+
+    res
+      .cookie("token", accessToken, {
+        httpOnly: true,
+        maxAge: accessTokenAge,
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        maxAge: refreshTokenAge,
+      })
+      .status(201)
+      .json({
+        user: userInfo,
+        token: accessToken,
+        message: "Customer account created successfully",
+      });
   } catch (err) {
     const error = err as Error;
+    console.error("Registration error:", error);
     res.status(500).json({ message: error.message });
   }
 };
