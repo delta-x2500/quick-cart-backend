@@ -149,9 +149,12 @@ export const login = async (
         maxAge: refreshTokenAge,
       })
       .status(200)
-      .json(userInfo);
+      .json({
+        user: userInfo,
+        token: accessToken,
+      });
   } catch (err) {
-    console.log(err);
+    console.error("Login error:", err);
     res.status(500).json({ message: "Failed to login!" });
   }
 };
