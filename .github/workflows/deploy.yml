@@ -111,14 +111,24 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
-            # Install dependencies
-            npm install --production
+            # Install ALL dependencies (including devDependencies for TypeScript)
+            npm install
 
             # Generate Prisma Client
             npx prisma generate
 
-            # Build TypeScript
+            # Build TypeScript (now tsc is available)
             npm run build
+
+            # Verify build succeeded
+            if [ ! -d "dist" ]; then
+              echo "❌ Build failed - dist folder not found!"
+              exit 1
+            fi
+            echo "✅ Build successful"
+
+            # Prune dev dependencies for production runtime
+            npm prune --production
 
             # Restart the app using PM2
             pm2 restart quick-cart-backend || pm2 start dist/app.js --name "quick-cart-backend"
